@@ -1,0 +1,15 @@
+---
+type: structured
+description: Per-page context data for illustration critique (paired with critique.system.j2)
+---
+{# Variables: page_num, page_outline, script_shot, location #}
+
+{% block base_instruction %}
+Page {{ page_num }}
+
+PAGE OUTLINE: {{ page_outline }}
+
+SCRIPT SHOT: {{ script_shot }}
+
+LOCATION: {{ location }}
+{% endblock %}

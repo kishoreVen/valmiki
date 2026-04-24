@@ -1,0 +1,19 @@
+---
+type: structured
+description: User message providing elements, director vision, and beats for prose creation
+---
+{# Variables: location, characters, director_vision, beats #}
+
+{% block base_instruction %}
+Here are the elements:
+{
+    location: {{ location }},
+    characters: {{ characters }},
+}
+
+Here is the director's vision:
+{{ director_vision }}
+
+Here are the story beats to expand into prose:
+{{ beats }}
+{% endblock %}

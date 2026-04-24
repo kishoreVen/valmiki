@@ -1,0 +1,22 @@
+---
+type: structured
+description: Apply artistic style from one image to the content of another while preserving composition
+---
+{# Variables: illustration_style, style_spec #}
+
+{% block base_instruction %}
+Apply the artistic style of image 2 to the content of image 1.
+
+{{ illustration_style }} Style Spec:
+{{ style_spec }}
+
+CRITICAL PRESERVATION RULES:
+- PRESERVE the exact COMPOSITION and FRAMING from image 1: same camera angle, same zoom level, same subject positions and sizes relative to the frame. If a character is small and distant in image 1, it MUST be small and distant in the output.
+- PRESERVE the exact color palette from image 1. Do NOT transfer colors from image 2.
+- PRESERVE all character expressions, poses, and facial features from image 1 exactly.
+- ONLY transfer the artistic TECHNIQUE from image 2: brushwork, texture, line quality and rendering style.
+- Do NOT change character species, clothing colors, accessory colors, or prop colors.
+- PRESERVE original background. Do not paint-in empty background.
+- Do NOT add new elements or change character expressions/poses.
+- Do NOT crop, zoom, reframe, or change the field of view. The output must be a 1:1 layout match of image 1.
+{% endblock %}

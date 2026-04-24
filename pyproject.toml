@@ -1,0 +1,31 @@
+[project]
+name = "valmiki"
+version = "0.1.0"
+description = "Story engine with model router and quality control"
+requires-python = ">=3.11"
+dependencies = [
+    "jinja2>=3.1",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.34",
+    "pillow>=11.0",
+    "numpy>=2.0",
+    "requests>=2.32",
+    "pydantic>=2.10",
+    "anthropic>=0.52",
+    "openai>=1.82",
+    "google-genai>=1.16",
+    "tenacity>=9.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.11",
+]
+
+[build-system]
+requires = ["setuptools>=75.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["story_engine*"]

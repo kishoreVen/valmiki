@@ -1,0 +1,18 @@
+---
+type: structured
+description: Instructions for making specific edits to an illustration image
+---
+{# Variables: edit_instructions, illustration_style, style_spec #}
+
+{% block base_instruction %}
+Make ONLY these specific edits to the image:
+{{ edit_instructions }}
+CRITICAL CONSTRAINTS:
+- ONLY fix the issues listed above. Do NOT make any other changes.
+- DO NOT change: composition, camera angle, background, colors, poses, or any element not explicitly mentioned.
+- DO NOT "improve" or "enhance" anything not in the list.
+- Use the reference images to ensure character/prop consistency for the specific edits.
+- The art style is {{ illustration_style }} and style spec is:
+{{ style_spec }}
+- The output should be identical to the input except for the listed fixes.
+{% endblock %}

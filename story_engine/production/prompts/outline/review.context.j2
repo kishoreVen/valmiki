@@ -1,0 +1,22 @@
+---
+type: structured
+description: Context prompt providing story details for the outline reviewer
+---
+{# Variables: age_range, pitch, characters, illustration_style, shot_style_spec, page_count, current_iteration, max_iterations #}
+
+{% block base_instruction %}
+Target audience age range: {{ age_range }}
+
+Story Pitch:
+{{ pitch }}
+
+Characters:
+{{ characters }}
+
+Shot Style Guidelines ({{ illustration_style }} style):
+{{ shot_style_spec }}
+
+Target Page Count: {{ page_count }} (acceptable range: ±2 pages)
+
+Critic Iteration: {{ current_iteration }} of {{ max_iterations }}
+{% endblock %}

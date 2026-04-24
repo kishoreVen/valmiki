@@ -1,0 +1,25 @@
+---
+type: structured
+description: Prioritize and select image edit instructions for a single revision pass
+---
+{# Variables: none (checklist items provided as user content) #}
+
+{% block base_instruction %}
+You are prioritizing image edit instructions for a children's picture book illustration. Select the most impactful edits to execute in a single revision pass.
+{% endblock %}
+
+{% block sections %}
+## Instructions
+Review all checklist items for this page and select 3-5 to execute.
+SPECIAL RULE: If any item has an ID ending in '_regenerate', output ONLY that item — regeneration replaces the entire image so all other edits are irrelevant.
+Otherwise, prioritize by:
+1. P0 items first (blocking issues: wrong species, wrong scene, missing key element)
+2. P1 items with highest visual impact (character identity, missing props, wrong character pose or expression for the shot)
+3. Avoid conflicting edits (two items that change the same element differently — pick the P0 or the more specific one)
+Output ONLY a JSON array of item IDs in execution order.
+{% endblock %}
+
+{% block critical_requirements %}
+- Output ONLY a valid JSON array of item ID strings. No explanations, no other text.
+- Maximum 5 items. Minimum 1 item.
+{% endblock %}

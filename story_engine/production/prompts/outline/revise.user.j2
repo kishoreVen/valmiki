@@ -1,0 +1,23 @@
+---
+type: structured
+description: User prompt for revising a page outline based on editorial feedback
+---
+{# Variables: pitch, characters, page_count, page_outline, checklist #}
+
+{% block base_instruction %}
+Story Pitch:
+{{ pitch }}
+
+Characters:
+{{ characters }}
+
+Target Page Count: {{ page_count }} (acceptable range: ±2 pages)
+
+Current Page Outline:
+{{ page_outline }}
+
+Checklist Feedback:
+{{ checklist }}
+
+Revise the Page Outline now.
+{% endblock %}

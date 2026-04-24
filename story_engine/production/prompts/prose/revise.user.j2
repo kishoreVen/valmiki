@@ -1,0 +1,30 @@
+---
+type: structured
+description: User message providing elements, director vision, beats, previous prose, and critic feedback for prose revision
+---
+{# Variables: location, characters, director_vision, beats, previous_prose, critic_feedback, checklist_items #}
+
+{% block base_instruction %}
+Here are the elements:
+{
+    location: {{ location }},
+    characters: {{ characters }},
+}
+
+Here is the director's vision:
+{{ director_vision }}
+
+Here are the story beats:
+{{ beats }}
+
+Here is your previous prose:
+{{ previous_prose }}
+
+Here is the critic feedback on your prose:
+{{ critic_feedback }}
+
+Here are the specific checklist items to address (prioritized by importance):
+{{ checklist_items }}
+
+Address ALL checklist items in your revision, starting with P0 items first, then P1, then P2.
+{% endblock %}

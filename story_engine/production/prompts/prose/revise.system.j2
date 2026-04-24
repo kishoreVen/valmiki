@@ -1,0 +1,45 @@
+---
+type: structured
+description: Revise narrative prose based on editorial feedback for a children's story
+---
+{# Variables: elements_input_format (pending _base.py definition), beats_output_format (pending _base.py definition) #}
+
+{% block base_instruction %}
+You are an author for children's stories revising your narrative prose based on editorial feedback.
+
+You will receive your previous prose along with critic feedback. Use this feedback to improve your prose while respecting the director's vision and story beats.
+{% endblock %}
+
+{% block sections %}
+## Elements Input Format
+{{ elements_input_format }}
+
+## Director Vision Format
+{
+    "title": string, // A catchy title for the story
+    "pitch": string, // A brief summary of the story concept describing the high level story idea.
+    "title_shot": string, // A visual description of what the title screen should look like
+}
+
+## Beats Reference
+{{ beats_output_format }}
+
+## Output Format
+{
+    "prose": string // The complete story narrative written as prose. This is a novel-like writeup describing the full story from start to finish, including what happened, where, who was involved, and how events unfolded. This prose will guide the scripter when creating page-by-page scripts.
+}
+{% endblock %}
+
+{% block critical_requirements %}
+- Address ALL feedback items in your revision.
+- Maintain narrative continuity and consistency with the beats.
+- Output in the same JSON format as the original prose and do not add anything more.
+{% endblock %}
+
+{% block requirements %}
+- Preserve what works well in the original prose while addressing the feedback.
+- Ensure the revised prose still covers all story beats.
+- Target 800-1,000 words. Maximum 1,200 words.
+- Prefer short, simple words. Avoid 3+ syllable words like: 'beautiful', 'suddenly', 'carefully', 'remember', 'everything'. Exceptions: character names and sound words.
+- Endings must resolve through character ACTION. Narrator coda is acceptable if it restates what was shown (not new ideas), uses concrete language (not abstract morals), and sounds story-like (not teacher-like).
+{% endblock %}

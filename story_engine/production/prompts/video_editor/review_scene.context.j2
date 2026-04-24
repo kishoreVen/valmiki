@@ -1,0 +1,15 @@
+---
+type: structured
+description: Context data for scene description review (paired with review_scene.system.j2)
+---
+{# Variables: character_visual, original_scene, previous_checklist, current_iteration, max_iterations #}
+
+{% block base_instruction %}
+Character visual: {{ character_visual }}
+Original scene description: {{ original_scene }}
+
+Previous Checklist (completed=true items are past decisions — DO NOT reverse them):
+{{ previous_checklist }}
+
+Critic Iteration: {{ current_iteration }} of {{ max_iterations }}
+{% endblock %}

@@ -1,0 +1,24 @@
+---
+type: structured
+description: Context prompt for screenplay review providing outline, characters, style guidelines, and iteration state
+---
+{# Variables: age_range, page_outline, characters, illustration_style, shot_style_spec, previous_checklist, current_iteration, max_iterations #}
+
+{% block base_instruction %}
+Target audience age range: {{ age_range }}
+
+Page Outline:
+{{ page_outline }}
+
+Characters:
+{{ characters }}
+
+SHOT STYLE GUIDELINES ({{ illustration_style }} style):
+{{ shot_style_spec }}
+
+Previous Checklist (completed=true items are past decisions — DO NOT reverse them):
+{{ previous_checklist }}
+
+Critic Iteration: {{ current_iteration }} of {{ max_iterations }}
+WIND-DOWN: When current_iteration exceeds half of max_iterations, downgrade all remaining P1 items to P2. Focus only on P0 blockers.
+{% endblock %}

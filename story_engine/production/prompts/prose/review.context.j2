@@ -1,0 +1,33 @@
+---
+type: structured
+description: Context data for prose review (paired with review.system.j2)
+---
+{# Variables: age_range, location, characters, concept, beats, previous_checklist, current_iteration #}
+
+{% block base_instruction %}
+Target audience age range: {{ age_range }}
+
+Story Elements (use these to validate character names in the outputs):
+{
+    location: {{ location }},
+    characters: {{ characters }},
+}
+
+Director's Concept (the vision this prose should follow):
+{{ concept }}
+
+Story Beats (the beats this prose expands):
+{{ beats }}
+
+Previous Checklist (completed=true items are past decisions - DO NOT reverse them):
+{{ previous_checklist }}
+
+Current Iteration: {{ current_iteration }}
+
+CHECKLIST INSTRUCTIONS:
+- For each previous checklist item, evaluate if the issue has been FIXED in the current version.
+- If an issue is now fixed, include it in your response with completed=true and completed_at_iteration={{ current_iteration }}.
+- If an issue is NOT fixed, include it with completed=false and completed_at_iteration=null.
+- Add any NEW issues discovered to the checklist (with completed=false and completed_at_iteration=null).
+- Keep ALL items (both completed and incomplete) in your final checklist for tracking.
+{% endblock %}

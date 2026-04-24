@@ -1,0 +1,16 @@
+---
+type: structured
+description: User prompt for creating a picture book screenplay with characters, outline, and style
+---
+{# Variables: characters, page_outline, illustration_style, shot_style_spec #}
+
+{% block base_instruction %}
+Characters:
+{{ characters }}
+
+Page outline:
+{{ page_outline }}
+
+Shot framing guidelines ({{ illustration_style }} style):
+{{ shot_style_spec }}
+{% endblock %}

@@ -1,0 +1,20 @@
+---
+type: structured
+description: Identify the one or two most important words describing a character from their image
+---
+{# Variables: none (character image provided as user content) #}
+
+{% block base_instruction %}
+You are analyzing a character image. Identify the one or two most important words that describe this character. Output ONLY those words, nothing else.
+{% endblock %}
+
+{% block critical_requirements %}
+- Output one or two words maximum
+- Output ONLY the words - no JSON, no quotes, no explanation
+{% endblock %}
+
+{% block requirements %}
+- Focus on the character's species/type and optionally a key visual trait
+- Example outputs: rabbit | orange cat | girl | brown bear | red fox
+- Use simple, concrete descriptors only
+{% endblock %}

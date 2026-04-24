@@ -1,0 +1,22 @@
+---
+type: structured
+description: User prompt for creating a story concept with input elements
+---
+{# Variables: theme, characters, initial_location_hint, age_range, concept_structure #}
+
+{% block base_instruction %}
+Here are the elements:
+{
+    theme: {{ theme }},
+    characters: {{ characters }},
+    initial_location_hint: {{ initial_location_hint }},
+}
+
+Here are the director rules:
+{
+    age_range: {{ age_range }}
+}
+
+CONCEPT STRUCTURE (your pitch MUST follow this pattern):
+{{ concept_structure }}
+{% endblock %}

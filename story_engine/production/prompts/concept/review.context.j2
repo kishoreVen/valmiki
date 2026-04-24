@@ -1,0 +1,22 @@
+---
+type: structured
+description: Context prompt for concept review providing audience and element details
+---
+{# Variables: age_range, characters, concept_structure, previous_checklist, current_iteration, max_iterations #}
+
+{% block base_instruction %}
+Target audience age range: {{ age_range }}
+
+Story Elements (use these to validate identifiers in the outputs):
+{
+    characters: {{ characters }},
+}
+
+CONCEPT STRUCTURE (the pitch MUST follow this pattern):
+{{ concept_structure }}
+
+Previous Checklist (completed=true items are past decisions — DO NOT reverse them):
+{{ previous_checklist }}
+
+Critic Iteration: {{ current_iteration }} of {{ max_iterations }}
+{% endblock %}

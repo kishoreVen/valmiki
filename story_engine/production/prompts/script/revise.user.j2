@@ -1,0 +1,22 @@
+---
+type: structured
+description: User prompt for revising a screenplay with outline, characters, current script, and feedback
+---
+{# Variables: page_outline, characters, current_script, critic_feedback, checklist_items #}
+
+{% block base_instruction %}
+Page outline:
+{{ page_outline }}
+
+Characters:
+{{ characters }}
+
+Current screenplay:
+{{ current_script }}
+
+Critic feedback:
+{{ critic_feedback }}
+
+Checklist (priority order):
+{{ checklist_items }}
+{% endblock %}

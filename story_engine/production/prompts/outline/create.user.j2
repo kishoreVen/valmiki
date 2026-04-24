@@ -1,0 +1,18 @@
+---
+type: structured
+description: User prompt for creating a page-by-page outline from a story pitch
+---
+{# Variables: pitch, characters, illustration_style, shot_style_spec, page_count #}
+
+{% block base_instruction %}
+Here is the story pitch:
+{{ pitch }}
+
+Here are the characters:
+{{ characters }}
+
+Shot Style Guidelines ({{ illustration_style }} style):
+{{ shot_style_spec }}
+
+Break this story into EXACTLY {{ page_count }} pages.
+{% endblock %}

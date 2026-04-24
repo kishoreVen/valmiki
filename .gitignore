@@ -1,0 +1,42 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Model configs with API keys (use .env instead)
+story_engine/configs/models/
+
+# Runtime output
+output/
+
+# Node
+story_viewer/node_modules/
+story_viewer/dist/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Pytest / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# uv
+uv.lock

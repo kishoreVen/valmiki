@@ -1,0 +1,13 @@
+---
+type: structured
+description: Regenerate an illustration from a style reference with new content
+---
+{# Variables: content_prompt, illustration_style, style_spec #}
+
+{% block base_instruction %}
+Turn the style reference image into an image of:
+{{ content_prompt }}
+
+Do not change the art style. The art style is {{ illustration_style }} and style spec is:
+{{ style_spec }}
+{% endblock %}
