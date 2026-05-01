@@ -247,6 +247,99 @@ def trigger_generate(req: GenerateRequest):
     return {"run_id": run_id, "status": "queued"}
 
 
+# ── Character Maker ──────────────────────────────────────────────────────────
+
+
+class CharacterSuggestRequest(BaseModel):
+    message: str
+    character_values: dict
+    template_fields: list
+
+
+@app.post("/api/characters/suggest")
+def character_suggest(req: CharacterSuggestRequest):
+    """Get Claude suggestions for character field edits.
+
+    Returns a conversational message plus a list of structured field suggestions
+    that the UI can apply as previews and allow the user to accept/reject.
+    """
+    import os
+    import anthropic
+
+    api_key = os.getenv("ANTHROPIC_API_KEY")
+    if not api_key:
+        raise HTTPException(500, "ANTHROPIC_API_KEY not set")
+
+    client = anthropic.Anthropic(api_key=api_key)
+
+    editable_fields = [
+        f for f in req.template_fields if f.get("type") not in ("image", "audio")
+    ]
+
+    fields_context = "\n".join(
+        f"- id={f['id']} | name={f['name']} | type={f['type']}"
+        + (f" | options={f['options']}" if f.get("options") else "")
+        + f" | current={req.character_values.get(f['id'], '[empty]')!r}"
+        for f in editable_fields
+    )
+
+    system_prompt = f"""You are a creative writing assistant helping to develop a character.
+
+The character template has these fields (with their current values):
+{fields_context}
+
+When the user asks for changes or ideas, respond in EXACTLY this format — no deviations:
+
+CONTENT: <one or two sentence conversational reply>
+SUGGESTIONS: <a JSON array of suggestion objects, or [] if none>
+
+Each suggestion object must have:
+  - "field_id": the exact id string from the field list above
+  - "proposed_value": the suggested new value (string)
+  - "rationale": a brief one-sentence explanation
+
+Example response:
+CONTENT: Here's a name and backstory that fits your description.
+SUGGESTIONS: [{{"field_id": "abc123", "proposed_value": "Aria Voss", "rationale": "Strong, memorable, fits the mercenary tone."}}]
+
+Only suggest fields that exist in the field list. Keep proposed values concise and creative."""
+
+    response = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=1024,
+        system=system_prompt,
+        messages=[{"role": "user", "content": req.message}],
+    )
+
+    text = response.content[0].text.strip()
+
+    content = ""
+    suggestions = []
+
+    if "CONTENT:" in text and "SUGGESTIONS:" in text:
+        try:
+            content_part, suggestions_part = text.split("SUGGESTIONS:", 1)
+            content = content_part.replace("CONTENT:", "").strip()
+            raw = json.loads(suggestions_part.strip())
+            field_ids = {f["id"] for f in req.template_fields}
+            suggestions = [
+                {
+                    "fieldId": s["field_id"],
+                    "currentValue": req.character_values.get(s["field_id"], ""),
+                    "proposedValue": s["proposed_value"],
+                    "rationale": s.get("rationale", ""),
+                }
+                for s in raw
+                if isinstance(s, dict) and s.get("field_id") in field_ids
+            ]
+        except (ValueError, json.JSONDecodeError, KeyError):
+            content = text
+    else:
+        content = text
+
+    return {"content": content, "suggestions": suggestions}
+
+
 # ── Health ───────────────────────────────────────────────────────────────────
 
 
