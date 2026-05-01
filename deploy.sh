@@ -5,13 +5,8 @@ REPO="$(cd "$(dirname "$0")" && pwd)"
 cd "$REPO"
 
 # ── Python backend ────────────────────────────────────────────────────────────
-if [ ! -d ".venv" ]; then
-  echo "[valmiki] Creating venv..."
-  uv venv
-fi
-
-echo "[valmiki] Installing Python deps..."
-uv pip install -e ".[dev]" --quiet
+echo "[valmiki] Syncing Python deps..."
+uv sync --extra dev --quiet
 
 # ── Node frontend ─────────────────────────────────────────────────────────────
 if [ ! -d "story_viewer/node_modules" ]; then
