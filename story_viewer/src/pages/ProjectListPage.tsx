@@ -81,8 +81,8 @@ export function ProjectListPage() {
                 <div className="cm-project-card-meta">
                   {p.characters.length} character
                   {p.characters.length !== 1 ? "s" : ""} ·{" "}
-                  {p.template.fields.length} field
-                  {p.template.fields.length !== 1 ? "s" : ""}
+                  {p.templates.length} template
+                  {p.templates.length !== 1 ? "s" : ""}
                 </div>
                 <button
                   className="cm-btn cm-btn-danger-ghost cm-project-delete"

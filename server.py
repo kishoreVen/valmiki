@@ -11,10 +11,14 @@ Run: uvicorn server:app --reload --port 8642
 """
 
 import json
+import os
 import time
 import uuid
 from pathlib import Path
 from typing import Optional
+
+from dotenv import load_dotenv
+load_dotenv()
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -295,7 +299,10 @@ SUGGESTIONS: <a JSON array of suggestion objects, or [] if none>
 
 Each suggestion object must have:
   - "field_id": the exact id string from the field list above
-  - "proposed_value": the suggested new value (string)
+  - "proposed_value": the suggested new value — format depends on field type:
+      * string: a plain string
+      * list: a JSON array of strings, e.g. ["item one", "item two"]
+      * dictionary: a JSON object, e.g. {{"key": "value"}}
   - "rationale": a brief one-sentence explanation
 
 Example response:
