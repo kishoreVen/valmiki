@@ -52,7 +52,7 @@ async function fetchSuggestions(
 // ── Field display helper ──────────────────────────────────────────────────────
 
 function valueToDisplay(value: FieldValue, field: FieldDefinition): string {
-  if (!value && value !== 0) return "";
+  if (!value) return "";
   if (field.kind === "image" || field.kind === "3d")
     return typeof value === "string" ? value : "";
   if (field.textVariant === "list") {
@@ -330,6 +330,10 @@ function CharacterCard({
 }) {
   const displayValues: Record<string, FieldValue> = { ...character.values };
   for (const s of pendingSuggestions) {
+    const f = template.fields.find((x) => x.id === s.fieldId);
+    if (f?.textVariant === "list" || f?.textVariant === "dictionary") {
+      try { displayValues[s.fieldId] = JSON.parse(s.proposedValue); continue; } catch { /* fall through */ }
+    }
     displayValues[s.fieldId] = s.proposedValue;
   }
 
@@ -540,10 +544,15 @@ export function CharacterEditorPage() {
   }
 
   function handleAcceptSuggestion(msgId: string, s: FieldSuggestion) {
-    if (!character) return;
+    if (!character || !template) return;
+    const field = template.fields.find((f) => f.id === s.fieldId);
+    let value: FieldValue = s.proposedValue;
+    if (field?.textVariant === "list" || field?.textVariant === "dictionary") {
+      try { value = JSON.parse(s.proposedValue); } catch { /* keep as string */ }
+    }
     const updated: Character = {
       ...character,
-      values: { ...character.values, [s.fieldId]: s.proposedValue },
+      values: { ...character.values, [s.fieldId]: value },
     };
     setCharacter(updated);
     updateCharacter(updated);
@@ -642,7 +651,7 @@ export function CharacterEditorPage() {
     : "New Character";
 
   return (
-    <div className="cm-root" style={{ paddingTop: 0, paddingBottom: 0, minHeight: "unset" }}>
+    <div className="cm-root" style={{ paddingTop: 0, paddingBottom: 0, minHeight: "unset", marginTop: "-1.5rem", marginBottom: "-1.5rem" }}>
       {/* Topbar */}
       <div className="cm-editor-topbar">
         <div className="cm-breadcrumb">
@@ -748,7 +757,7 @@ export function CharacterEditorPage() {
               <textarea
                 ref={inputRef}
                 className="cm-chat-input"
-                placeholder="Describe what you want… (Enter to send)"
+                placeholder="Describe what you want…"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
