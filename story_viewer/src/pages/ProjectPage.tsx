@@ -3,16 +3,82 @@ import { useNavigate, useParams } from "react-router-dom";
 import {
   getProject,
   createTemplate,
+  updateTemplate,
   createCharacter,
   deleteCharacter,
   updateWorld,
   addStoryRun,
   type Project,
   type CharacterTemplate,
+  type FieldDefinition,
+  type FieldKind,
+  type TextVariant,
   type World,
   type WorldRule,
 } from "../lib/character-store";
 import "../character.css";
+
+// ── Field Editor ──────────────────────────────────────────────────────────────
+
+function FieldRow({
+  field,
+  onUpdate,
+  onDelete,
+}: {
+  field: FieldDefinition;
+  onUpdate: (f: FieldDefinition) => void;
+  onDelete: () => void;
+}) {
+  return (
+    <div className="cm-field-row">
+      <input
+        className="cm-input"
+        style={{ flex: 1 }}
+        value={field.name}
+        onChange={(e) => onUpdate({ ...field, name: e.target.value })}
+        placeholder="Field name (e.g. Name, Backstory, Portrait)"
+      />
+      <select
+        className="cm-select"
+        style={{ width: 90 }}
+        value={field.kind}
+        onChange={(e) => {
+          const kind = e.target.value as FieldKind;
+          onUpdate({ ...field, kind, textVariant: kind === "text" ? field.textVariant ?? "string" : undefined });
+        }}
+      >
+        <option value="text">Text</option>
+        <option value="image">Image</option>
+        <option value="3d">3D</option>
+      </select>
+      {field.kind === "text" && (
+        <select
+          className="cm-select"
+          style={{ width: 120 }}
+          value={field.textVariant ?? "string"}
+          onChange={(e) => onUpdate({ ...field, textVariant: e.target.value as TextVariant })}
+        >
+          <option value="string">String</option>
+          <option value="list">List</option>
+          <option value="dictionary">Dictionary</option>
+        </select>
+      )}
+      <label className="cm-checkbox-label">
+        <input type="checkbox" checked={field.required} onChange={(e) => onUpdate({ ...field, required: e.target.checked })} />
+        Required
+      </label>
+      <button className="cm-btn cm-btn-danger-ghost" style={{ height: 32, padding: "0 10px", fontSize: 12 }} onClick={onDelete}>
+        Remove
+      </button>
+    </div>
+  );
+}
+
+function fieldUid() {
+  return typeof crypto !== "undefined" && crypto.randomUUID
+    ? crypto.randomUUID()
+    : Math.random().toString(36).slice(2) + Date.now().toString(36);
+}
 
 export function ProjectPage() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -30,6 +96,11 @@ export function ProjectPage() {
   const [newTemplateMode, setNewTemplateMode] = useState(false);
   const [newTemplateName, setNewTemplateName] = useState("");
 
+  // Template field editor modal
+  const [showFieldModal, setShowFieldModal] = useState(false);
+  const [fieldModalTemplate, setFieldModalTemplate] = useState<CharacterTemplate | null>(null);
+  const [localFields, setLocalFields] = useState<FieldDefinition[]>([]);
+
   // Generate Story modal
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [genTheme, setGenTheme] = useState("");
@@ -45,6 +116,17 @@ export function ProjectPage() {
     setProject(p);
     setWorldDesc(p.world.description);
   }, [projectId]);
+
+  // Auto-compact when navigating to this project if characters changed since last compaction
+  useEffect(() => {
+    if (!project || project.characters.length === 0 || isCompacting) return;
+    const lastCompact = project.world.lastCharacterCompactionAt;
+    const stale = !lastCompact || project.characters.some(
+      (c) => c.createdAt > lastCompact || c.updatedAt > lastCompact
+    );
+    if (stale) handleCompactCharacters(project);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [project?.id]);
 
   if (!project) return null;
 
@@ -81,12 +163,13 @@ export function ProjectPage() {
     setProject(getProject(project.id)!);
   }
 
-  async function handleCompactCharacters() {
-    if (isCompacting || !project || project.characters.length === 0) return;
+  async function handleCompactCharacters(projectOverride?: Project) {
+    const proj = projectOverride ?? project;
+    if (isCompacting || !proj || proj.characters.length === 0) return;
     setIsCompacting("characters");
     try {
-      const characters = project.characters.map((c) => {
-        const tmpl = project.templates.find((t) => t.id === c.templateId);
+      const characters = proj.characters.map((c) => {
+        const tmpl = proj.templates.find((t) => t.id === c.templateId);
         if (!tmpl) return null;
         const named: Record<string, unknown> = {};
         for (const field of tmpl.fields) {
@@ -99,8 +182,8 @@ export function ProjectPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          world_description: project.world.description,
-          world_rules: project.world.rules.map((r) => r.text),
+          world_description: proj.world.description,
+          world_rules: proj.world.rules.map((r) => r.text),
           characters,
         }),
       });
@@ -108,8 +191,8 @@ export function ProjectPage() {
       const { description, rules: ruleTexts } = await res.json();
 
       const now = new Date().toISOString();
-      const userRules = project.world.rules.filter((r) => r.source === "user");
-      const storyRules = project.world.rules.filter((r) => r.source === "story_compaction");
+      const userRules = proj.world.rules.filter((r) => r.source === "user");
+      const storyRules = proj.world.rules.filter((r) => r.source === "story_compaction");
       const newCharRules: WorldRule[] = (ruleTexts as string[]).map((text) => ({
         id: crypto.randomUUID(),
         text,
@@ -118,13 +201,13 @@ export function ProjectPage() {
       }));
 
       const updatedWorld: World = {
-        ...project.world,
+        ...proj.world,
         description,
         rules: [...userRules, ...newCharRules, ...storyRules],
         lastCharacterCompactionAt: now,
       };
-      updateWorld(project.id, updatedWorld);
-      const fresh = getProject(project.id)!;
+      updateWorld(proj.id, updatedWorld);
+      const fresh = getProject(proj.id)!;
       setProject(fresh);
       setWorldDesc(description);
     } catch (e) {
@@ -179,13 +262,28 @@ export function ProjectPage() {
 
   // ── Template actions ──────────────────────────────────────────────────────
 
+  function openFieldEditor(t: CharacterTemplate) {
+    setFieldModalTemplate(t);
+    setLocalFields(t.fields);
+    setShowFieldModal(true);
+  }
+
   function handleCreateTemplate() {
     if (!newTemplateName.trim()) return;
     const t = createTemplate(project!.id, newTemplateName.trim());
+    setProject(getProject(project!.id)!);
     setShowCharModal(false);
     setNewTemplateMode(false);
     setNewTemplateName("");
-    navigate(`/characters/${project!.id}/t/${t.id}`);
+    openFieldEditor(t);
+  }
+
+  function handleSaveFields() {
+    if (!fieldModalTemplate) return;
+    updateTemplate(project!.id, { ...fieldModalTemplate, fields: localFields });
+    setProject(getProject(project!.id)!);
+    setShowFieldModal(false);
+    setFieldModalTemplate(null);
   }
 
   // ── Character actions ─────────────────────────────────────────────────────
@@ -500,10 +598,17 @@ export function ProjectPage() {
                   <div style={{ width: 32, height: 32, borderRadius: "var(--r-xs)", background: "var(--hi-bg)", color: "var(--hi)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 14, flexShrink: 0 }}>
                     {t.name[0]?.toUpperCase()}
                   </div>
-                  <div>
+                  <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 600, fontSize: 14, color: "var(--text)" }}>{t.name}</div>
                     <div style={{ fontSize: 12, color: "var(--text-2)" }}>{t.fields.length} field{t.fields.length !== 1 ? "s" : ""}</div>
                   </div>
+                  <button
+                    className="cm-btn"
+                    style={{ height: 26, fontSize: 11, padding: "0 8px", flexShrink: 0 }}
+                    onClick={(e) => { e.stopPropagation(); openFieldEditor(t); }}
+                  >
+                    Edit Fields
+                  </button>
                 </div>
               ))}
               {newTemplateMode ? (
@@ -630,6 +735,41 @@ export function ProjectPage() {
                 disabled={!genTheme.trim() || isGenerating}
               >
                 {isGenerating ? "Queuing…" : "Generate →"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Template Field Editor modal ── */}
+      {showFieldModal && fieldModalTemplate && (
+        <div className="cm-modal-overlay" onClick={() => { setShowFieldModal(false); setFieldModalTemplate(null); }}>
+          <div className="cm-modal" style={{ maxWidth: 620 }} onClick={(e) => e.stopPropagation()}>
+            <h2 className="cm-modal-title">Edit Fields — {fieldModalTemplate.name}</h2>
+            <div className="cm-field-list" style={{ marginBottom: 8 }}>
+              {localFields.map((f, i) => (
+                <FieldRow
+                  key={f.id}
+                  field={f}
+                  onUpdate={(updated) => setLocalFields((prev) => prev.map((x, idx) => idx === i ? updated : x))}
+                  onDelete={() => setLocalFields((prev) => prev.filter((_, idx) => idx !== i))}
+                />
+              ))}
+            </div>
+            {localFields.some((f) => !f.name.trim()) && (
+              <p style={{ fontSize: 12, color: "var(--error)", marginBottom: 8 }}>All fields must have a name.</p>
+            )}
+            <button className="cm-btn" style={{ marginBottom: 16 }} onClick={() => setLocalFields((prev) => [...prev, { id: fieldUid(), name: "", kind: "text", textVariant: "string", required: false }])}>
+              + Add Field
+            </button>
+            <div className="cm-modal-actions">
+              <button className="cm-btn" onClick={() => { setShowFieldModal(false); setFieldModalTemplate(null); }}>Cancel</button>
+              <button
+                className="cm-btn cm-btn-primary"
+                onClick={handleSaveFields}
+                disabled={localFields.length === 0 || localFields.some((f) => !f.name.trim())}
+              >
+                Save Fields
               </button>
             </div>
           </div>
