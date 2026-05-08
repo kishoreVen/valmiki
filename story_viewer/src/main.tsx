@@ -7,8 +7,8 @@ import { TemplateEditorPage } from "./pages/TemplateEditorPage";
 import { PromptInspectorPage } from "./pages/PromptInspectorPage";
 import { ProjectListPage } from "./pages/ProjectListPage";
 import { ProjectPage } from "./pages/ProjectPage";
-import { TemplatePage } from "./pages/TemplatePage";
 import { CharacterEditorPage } from "./pages/CharacterEditorPage";
+import { Navigate } from "react-router-dom";
 import "./main.css";
 
 function App() {
@@ -35,11 +35,11 @@ function App() {
           <Route path="/inspector/:runId/:stage" element={<PromptInspectorPage />} />
           <Route path="/characters" element={<ProjectListPage />} />
           <Route path="/w/:projectId" element={<ProjectPage />} />
-          <Route path="/w/:projectId/t/:templateId" element={<TemplatePage />} />
+          <Route path="/w/:projectId/t/:templateId" element={<Navigate to=".." replace />} />
           <Route path="/w/:projectId/t/:templateId/c/:characterId" element={<CharacterEditorPage />} />
           {/* legacy deep links */}
           <Route path="/characters/:projectId" element={<ProjectPage />} />
-          <Route path="/characters/:projectId/t/:templateId" element={<TemplatePage />} />
+          <Route path="/characters/:projectId/t/:templateId" element={<Navigate to=".." replace />} />
           <Route path="/characters/:projectId/t/:templateId/c/:characterId" element={<CharacterEditorPage />} />
         </Routes>
       </main>

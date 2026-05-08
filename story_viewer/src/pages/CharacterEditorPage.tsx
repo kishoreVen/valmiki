@@ -583,10 +583,10 @@ export function CharacterEditorPage() {
             className="cm-btn cm-btn-ghost"
             style={{ height: 30, fontSize: 12 }}
             onClick={() =>
-              navigate(`/characters/${projectId}/t/${templateId}`)
+              navigate(`/characters/${projectId}`)
             }
           >
-            ← {template.name}
+            ← Project
           </button>
           <span className="cm-breadcrumb-sep">/</span>
           <span className="cm-editor-topbar-name">{charName}</span>
