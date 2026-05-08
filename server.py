@@ -226,20 +226,18 @@ class GenerateRequest(BaseModel):
     age_range: str = "4-5"
     config_name: str = "v0"
     location_hint: Optional[str] = None
+    project_id: Optional[str] = None
+    world_description: str = ""
+    world_rules: list[str] = []
 
 
 @app.post("/api/generate")
 def trigger_generate(req: GenerateRequest):
-    """Trigger a story generation pipeline run.
-
-    This is a placeholder — actual integration with the story engine
-    will be connected when the engine is runnable with dependencies.
-    """
+    """Trigger a story generation pipeline run."""
     run_id = f"run_{int(time.time())}_{uuid.uuid4().hex[:6]}"
     run_dir = OUTPUT_DIR / run_id
     run_dir.mkdir(parents=True, exist_ok=True)
 
-    # Save the request as a manifest
     manifest = {
         "run_id": run_id,
         "request": req.model_dump(),
@@ -258,16 +256,13 @@ class CharacterSuggestRequest(BaseModel):
     message: str
     character_values: dict
     template_fields: list
+    world_description: str = ""
+    world_rules: list[str] = []
 
 
 @app.post("/api/characters/suggest")
 def character_suggest(req: CharacterSuggestRequest):
-    """Get Claude suggestions for character field edits.
-
-    Returns a conversational message plus a list of structured field suggestions
-    that the UI can apply as previews and allow the user to accept/reject.
-    """
-    import os
+    """Get Claude suggestions for character field edits."""
     import anthropic
 
     api_key = os.getenv("ANTHROPIC_API_KEY")
@@ -287,7 +282,16 @@ def character_suggest(req: CharacterSuggestRequest):
         for f in editable_fields
     )
 
-    system_prompt = f"""You are a creative writing assistant helping to develop a character.
+    world_context = ""
+    if req.world_description or req.world_rules:
+        parts = []
+        if req.world_description:
+            parts.append(f"World: {req.world_description}")
+        if req.world_rules:
+            parts.append("Canon rules (treat as hard constraints):\n" + "\n".join(f"- {r}" for r in req.world_rules))
+        world_context = "\n\n" + "\n\n".join(parts)
+
+    system_prompt = f"""You are a creative writing assistant helping to develop a character.{world_context}
 
 The character template has these fields (with their current values):
 {fields_context}
@@ -345,6 +349,107 @@ Only suggest fields that exist in the field list. Keep proposed values concise a
         content = text
 
     return {"content": content, "suggestions": suggestions}
+
+
+# ── World Compaction ──────────────────────────────────────────────────────────
+
+
+def _call_compaction(system: str) -> tuple[str, list[str]]:
+    """Call Claude with a compaction system prompt, return (description, rules)."""
+    import anthropic
+
+    api_key = os.getenv("ANTHROPIC_API_KEY")
+    if not api_key:
+        raise HTTPException(500, "ANTHROPIC_API_KEY not set")
+
+    client = anthropic.Anthropic(api_key=api_key)
+    response = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=1024,
+        system=system,
+        messages=[{"role": "user", "content": "Update the world bible."}],
+    )
+
+    text = response.content[0].text.strip()
+    # Strip markdown code fences if present
+    if text.startswith("```"):
+        text = "\n".join(text.split("\n")[1:])
+        if text.endswith("```"):
+            text = text[: text.rfind("```")]
+
+    data = json.loads(text.strip())
+    return data.get("description", ""), data.get("rules", [])
+
+
+class CharacterCompactionRequest(BaseModel):
+    world_description: str
+    world_rules: list[str]
+    characters: list[dict]
+
+
+@app.post("/api/projects/compact/characters")
+def compact_from_characters(req: CharacterCompactionRequest):
+    """Update world description and rules based on all characters in the project."""
+    existing_desc = req.world_description or "(empty — this is a new world)"
+    existing_rules = "\n".join(f"- {r}" for r in req.world_rules) if req.world_rules else "(none yet)"
+
+    system = f"""You are maintaining a world bible for a story universe.
+
+Current world description:
+{existing_desc}
+
+Current canon rules:
+{existing_rules}
+
+Here are all the characters that exist in this world:
+{json.dumps(req.characters, indent=2)}
+
+Based on what these characters collectively imply — their backgrounds, goals, weaknesses, and traits — update the world description and extract canon rules.
+
+Return ONLY valid JSON with no markdown fences:
+{{"description": "...", "rules": ["...", "..."]}}
+
+Keep the description concise (2-4 sentences). Rules should be specific, falsifiable facts about this world.
+Preserve rules still supported by the characters. Add new ones you observe.
+Do not invent rules not evidenced by the characters."""
+
+    description, rules = _call_compaction(system)
+    return {"description": description, "rules": rules}
+
+
+class StoryCompactionRequest(BaseModel):
+    world_description: str
+    world_rules: list[str]
+    stories: list[dict]  # [{runId, theme, createdAt}]
+
+
+@app.post("/api/projects/compact/stories")
+def compact_from_stories(req: StoryCompactionRequest):
+    """Update world description and rules based on stories generated in the project."""
+    existing_desc = req.world_description or "(empty — this is a new world)"
+    existing_rules = "\n".join(f"- {r}" for r in req.world_rules) if req.world_rules else "(none yet)"
+
+    system = f"""You are maintaining a world bible for a story universe.
+
+Current world description:
+{existing_desc}
+
+Current canon rules:
+{existing_rules}
+
+Here are the stories that have been told in this world:
+{json.dumps(req.stories, indent=2)}
+
+Based on what these stories establish — their themes, events, and the world they imply — update the world description and extract new canon rules about what is established as true.
+
+Return ONLY valid JSON with no markdown fences:
+{{"description": "...", "rules": ["...", "..."]}}
+
+Keep the description concise (2-4 sentences). Rules should be specific, falsifiable facts.
+Preserve existing rules that remain valid. Add new ones implied by the stories."""
+
+    description, rules = _call_compaction(system)
+    return {"description": description, "rules": rules}
 
 
 # ── Health ───────────────────────────────────────────────────────────────────
