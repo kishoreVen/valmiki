@@ -38,31 +38,31 @@ export function ProjectListPage() {
       <div className="cm-inner">
         <div className="cm-page-header">
           <div className="cm-page-title-group">
-            <h1 className="cm-page-title">Character Projects</h1>
+            <h1 className="cm-page-title">Worlds</h1>
             <p className="cm-page-subtitle">
-              Define templates and build your cast, one project at a time.
+              Each world holds its characters, canon rules, and generated stories.
             </p>
           </div>
           <button
             className="cm-btn cm-btn-primary"
             onClick={() => setShowModal(true)}
           >
-            New Project
+            New World
           </button>
         </div>
 
         {projects.length === 0 ? (
           <div className="cm-empty">
             <div className="cm-empty-icon">✦</div>
-            <p className="cm-empty-title">No projects yet</p>
+            <p className="cm-empty-title">No worlds yet</p>
             <p className="cm-empty-desc">
-              A project holds a character template and the roster built from it.
+              A world holds your characters, their canon rules, and the stories they inhabit.
             </p>
             <button
               className="cm-btn cm-btn-primary"
               onClick={() => setShowModal(true)}
             >
-              Create your first project
+              Create your first world
             </button>
           </div>
         ) : (
@@ -105,7 +105,7 @@ export function ProjectListPage() {
           }}
         >
           <div className="cm-modal" onClick={(e) => e.stopPropagation()}>
-            <h2 className="cm-modal-title">New Project</h2>
+            <h2 className="cm-modal-title">New World</h2>
             <input
               className="cm-input"
               style={{ width: "100%" }}

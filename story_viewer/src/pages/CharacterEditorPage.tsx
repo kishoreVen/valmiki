@@ -9,6 +9,7 @@ import {
   type FieldDefinition,
   type FieldValue,
   type FieldSuggestion,
+  type World,
 } from "../lib/character-store";
 import "../character.css";
 
@@ -27,7 +28,8 @@ interface Message {
 async function fetchSuggestions(
   message: string,
   character: Character,
-  fields: FieldDefinition[]
+  fields: FieldDefinition[],
+  world?: World
 ): Promise<{ content: string; suggestions: FieldSuggestion[] }> {
   const res = await fetch("/api/characters/suggest", {
     method: "POST",
@@ -43,6 +45,8 @@ async function fetchSuggestions(
           type: f.textVariant ?? "string",
           options: undefined,
         })),
+      world_description: world?.description ?? "",
+      world_rules: world?.rules.map((r) => r.text) ?? [],
     }),
   });
   if (!res.ok) throw new Error(await res.text());
@@ -319,41 +323,27 @@ function CharacterCard({
   character,
   template,
   pendingSuggestions,
-  onQuote,
+  onUpdate,
   flashMap,
 }: {
   character: Character;
   template: CharacterTemplate;
   pendingSuggestions: FieldSuggestion[];
-  onQuote: (text: string) => void;
+  onUpdate: (fieldId: string, value: FieldValue) => void;
   flashMap: Record<string, "accept" | "reject">;
 }) {
-  const displayValues: Record<string, FieldValue> = { ...character.values };
-  for (const s of pendingSuggestions) {
-    const f = template.fields.find((x) => x.id === s.fieldId);
-    if (f?.textVariant === "list" || f?.textVariant === "dictionary") {
-      try { displayValues[s.fieldId] = JSON.parse(s.proposedValue); continue; } catch { /* fall through */ }
-    }
-    displayValues[s.fieldId] = s.proposedValue;
-  }
-
   const portraitField = template.fields.find((f) => f.kind === "image");
-  const portraitUrl = portraitField
-    ? (displayValues[portraitField.id] as string) || null
-    : null;
-
   const nameField = template.fields.find(
-    (f) =>
-      f.name.toLowerCase() === "name" ||
-      f.name.toLowerCase() === "character name"
+    (f) => f.name.toLowerCase() === "name" || f.name.toLowerCase() === "character name"
   );
   const charName = nameField
-    ? ((displayValues[nameField.id] as string) || "Unnamed")
+    ? ((character.values[nameField.id] as string) || "Unnamed")
     : "New Character";
+  const portraitUrl = portraitField
+    ? (character.values[portraitField.id] as string) || null
+    : null;
 
-  const visibleFields = template.fields.filter(
-    (f) => f.kind !== "image" && f.kind !== "3d"
-  );
+  const pendingFieldIds = new Set(pendingSuggestions.map((s) => s.fieldId));
 
   return (
     <div className="cm-character-card">
@@ -368,12 +358,8 @@ function CharacterCard({
       </div>
 
       <div className="cm-char-fields">
-        {visibleFields.map((f) => {
-          const raw = displayValues[f.id];
-          const display = valueToDisplay(raw, f);
-          const isPending = pendingSuggestions.some((s) => s.fieldId === f.id);
+        {template.fields.map((f) => {
           const flash = flashMap[f.id];
-
           return (
             <div
               key={f.id}
@@ -384,92 +370,29 @@ function CharacterCard({
                     ? "cm-char-field-flash-reject"
                     : ""
               }`}
-              title="Click to quote in chat"
-              onClick={() => display && onQuote(`${f.name}: ${display}`)}
             >
-              <span className="cm-char-field-name">{f.name}</span>
-              {f.textVariant === "list" && Array.isArray(raw) && raw.length > 0 ? (
-                <ul className="cm-char-field-list">
-                  {raw.map((item, i) => (
-                    <li key={i}>{item}</li>
-                  ))}
-                </ul>
-              ) : f.textVariant === "dictionary" &&
-                raw &&
-                typeof raw === "object" &&
-                !Array.isArray(raw) ? (
-                <dl className="cm-char-field-dict">
-                  {Object.entries(raw as Record<string, string>).map(([k, v]) => (
-                    <div key={k} className="cm-char-field-dict-row">
-                      <dt>{k}</dt>
-                      <dd>{v}</dd>
-                    </div>
-                  ))}
-                </dl>
-              ) : (
-                <span
-                  className={`cm-char-field-value ${isPending ? "cm-pending" : !display ? "cm-empty" : ""}`}
-                >
-                  {display || `No ${f.name.toLowerCase()} set`}
-                </span>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// ── Field Edit Panel ──────────────────────────────────────────────────────────
-
-function FieldEditPanel({
-  character,
-  template,
-  onUpdate,
-}: {
-  character: Character;
-  template: CharacterTemplate;
-  onUpdate: (fieldId: string, value: FieldValue) => void;
-}) {
-  const [open, setOpen] = useState(false);
-
-  return (
-    <div className="cm-field-edit-panel">
-      <div className="cm-field-edit-header" onClick={() => setOpen((o) => !o)}>
-        <span className="cm-panel-title">Direct Edit</span>
-        <span className="cm-field-edit-toggle">{open ? "▲" : "▼"}</span>
-      </div>
-      {open && (
-        <div className="cm-field-edit-body">
-          {template.fields.map((f) => (
-            <div key={f.id} className="cm-field-edit-row">
-              <label className="cm-field-edit-label">
-                {f.name}
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                <span className="cm-char-field-name">{f.name}</span>
+                {pendingFieldIds.has(f.id) && (
+                  <span style={{ fontSize: 9, background: "var(--hi-bg)", color: "var(--hi)", padding: "1px 5px", borderRadius: 4 }}>
+                    pending
+                  </span>
+                )}
                 {f.kind !== "text" && (
-                  <span
-                    style={{
-                      marginLeft: 6,
-                      fontSize: 9,
-                      background: "var(--hi-bg)",
-                      color: "var(--hi)",
-                      padding: "1px 5px",
-                      borderRadius: 4,
-                    }}
-                  >
+                  <span style={{ fontSize: 9, background: "var(--surface-3, var(--surface-2))", color: "var(--text-3)", padding: "1px 5px", borderRadius: 4 }}>
                     {f.kind}
                   </span>
                 )}
-              </label>
+              </div>
               <FieldInput
                 field={f}
                 value={character.values[f.id] ?? (f.textVariant === "list" ? [] : f.textVariant === "dictionary" ? {} : "")}
                 onChange={(v) => onUpdate(f.id, v)}
               />
             </div>
-          ))}
-        </div>
-      )}
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -601,7 +524,8 @@ export function CharacterEditorPage() {
       const { content, suggestions } = await fetchSuggestions(
         userText,
         character,
-        template.fields
+        template.fields,
+        project.world
       );
       const assistantMsg: Message = {
         id: crypto.randomUUID(),
@@ -783,22 +707,17 @@ export function CharacterEditorPage() {
           </div>
         </div>
 
-        {/* Right: Character card + field edit */}
+        {/* Right: Character card (directly editable) */}
         <div className="cm-right-panel">
           <div className="cm-character-card-panel">
             <CharacterCard
               character={character}
               template={template}
               pendingSuggestions={pendingSuggestions}
-              onQuote={handleQuote}
+              onUpdate={updateCharacterField}
               flashMap={flashMap}
             />
           </div>
-          <FieldEditPanel
-            character={character}
-            template={template}
-            onUpdate={updateCharacterField}
-          />
         </div>
       </div>
     </div>

@@ -26,4 +26,16 @@ trap 'kill %1 %2 2>/dev/null; exit 0' INT TERM
 .venv/bin/uvicorn server:app --reload --port 8642 &
 (cd story_viewer && npm run dev) &
 
+# Open browser once Vite is ready (WSL2 / Linux / macOS)
+(
+  sleep 3
+  if grep -qi microsoft /proc/version 2>/dev/null; then
+    explorer.exe "http://localhost:5173/" 2>/dev/null || true
+  elif command -v xdg-open &>/dev/null; then
+    xdg-open "http://localhost:5173/"
+  elif command -v open &>/dev/null; then
+    open "http://localhost:5173/"
+  fi
+) &
+
 wait

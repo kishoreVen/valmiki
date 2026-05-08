@@ -16,15 +16,16 @@ function App() {
     <BrowserRouter>
       <nav className="topnav">
         <span className="logo">valmiki</span>
-        <NavLink to="/">Stories</NavLink>
-        <NavLink to="/pipeline">Pipeline</NavLink>
-        <NavLink to="/templates">Templates</NavLink>
+        <NavLink to="/" end>Worlds</NavLink>
+        <NavLink to="/stories">Stories</NavLink>
         <NavLink to="/inspector">Inspector</NavLink>
-        <NavLink to="/characters">Characters</NavLink>
+        <NavLink to="/templates">Templates</NavLink>
+        <NavLink to="/pipeline">Pipeline</NavLink>
       </nav>
       <main className="main-content">
         <Routes>
-          <Route path="/" element={<StoryListPage />} />
+          <Route path="/" element={<ProjectListPage />} />
+          <Route path="/stories" element={<StoryListPage />} />
           <Route path="/pipeline" element={<PipelineViewPage />} />
           <Route path="/pipeline/:runId" element={<PipelineViewPage />} />
           <Route path="/templates" element={<TemplateEditorPage />} />
@@ -33,6 +34,10 @@ function App() {
           <Route path="/inspector/:runId" element={<PromptInspectorPage />} />
           <Route path="/inspector/:runId/:stage" element={<PromptInspectorPage />} />
           <Route path="/characters" element={<ProjectListPage />} />
+          <Route path="/w/:projectId" element={<ProjectPage />} />
+          <Route path="/w/:projectId/t/:templateId" element={<TemplatePage />} />
+          <Route path="/w/:projectId/t/:templateId/c/:characterId" element={<CharacterEditorPage />} />
+          {/* legacy deep links */}
           <Route path="/characters/:projectId" element={<ProjectPage />} />
           <Route path="/characters/:projectId/t/:templateId" element={<TemplatePage />} />
           <Route path="/characters/:projectId/t/:templateId/c/:characterId" element={<CharacterEditorPage />} />
