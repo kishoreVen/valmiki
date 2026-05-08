@@ -25,11 +25,33 @@ export interface Character {
   updatedAt: string;
 }
 
+export interface WorldRule {
+  id: string;
+  text: string;
+  source: "user" | "character_compaction" | "story_compaction";
+  createdAt: string;
+}
+
+export interface StoryRun {
+  runId: string;
+  theme: string;
+  createdAt: string;
+}
+
+export interface World {
+  description: string;
+  rules: WorldRule[];
+  storyRuns: StoryRun[];
+  lastCharacterCompactionAt: string | null;
+  lastStoryCompactionAt: string | null;
+}
+
 export interface Project {
   id: string;
   name: string;
   templates: CharacterTemplate[];
   characters: Character[];
+  world: World;
 }
 
 export interface FieldSuggestion {
@@ -47,7 +69,17 @@ function uid(): string {
     : Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
 
-/** Migrate old single-template format to multi-template format. */
+function emptyWorld(): World {
+  return {
+    description: "",
+    rules: [],
+    storyRuns: [],
+    lastCharacterCompactionAt: null,
+    lastStoryCompactionAt: null,
+  };
+}
+
+/** Migrate old formats to current format. */
 function migrate(raw: unknown[]): Project[] {
   return (raw as any[]).map((p) => {
     if (p.template && !p.templates) {
@@ -71,9 +103,10 @@ function migrate(raw: unknown[]): Project[] {
           ...c,
           templateId: c.templateId ?? legacyId,
         })),
+        world: p.world ?? emptyWorld(),
       } satisfies Project;
     }
-    return p as Project;
+    return { ...(p as Project), world: p.world ?? emptyWorld() };
   });
 }
 
@@ -101,7 +134,7 @@ export function getProject(id: string): Project | undefined {
 }
 
 export function createProject(name: string): Project {
-  const project: Project = { id: uid(), name, templates: [], characters: [] };
+  const project: Project = { id: uid(), name, templates: [], characters: [], world: emptyWorld() };
   const projects = load();
   projects.push(project);
   persist(projects);
@@ -117,6 +150,24 @@ export function updateProject(project: Project): void {
 
 export function deleteProject(id: string): void {
   persist(load().filter((p) => p.id !== id));
+}
+
+// ── World ─────────────────────────────────────────────────────────────────────
+
+export function updateWorld(projectId: string, world: World): void {
+  const projects = load();
+  const project = projects.find((p) => p.id === projectId);
+  if (!project) return;
+  project.world = world;
+  persist(projects);
+}
+
+export function addStoryRun(projectId: string, run: StoryRun): void {
+  const projects = load();
+  const project = projects.find((p) => p.id === projectId);
+  if (!project) return;
+  project.world.storyRuns = [run, ...(project.world.storyRuns ?? [])];
+  persist(projects);
 }
 
 // ── Templates ─────────────────────────────────────────────────────────────────
